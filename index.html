@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>Nothing Gym Timer</title>
+
+<style>
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #000;
+  color: #fff;
+  height: 100%;
+  font-family: monospace;
+}
+
+.container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.time {
+  font-size: 96px;
+  letter-spacing: 4px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.buttons {
+  display: flex;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+button {
+  background: none;
+  border: 1px solid #fff;
+  color: #fff;
+  padding: 8px 18px;
+  font-size: 12px;
+  letter-spacing: 2px;
+  cursor: pointer;
+}
+
+button.active {
+  background: #fff;
+  color: #000;
+}
+
+.reset {
+  margin-top: 20px;
+  font-size: 10px;
+  opacity: 0.7;
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+  <div class="time" id="time">01:00</div>
+
+  <div class="buttons">
+    <button id="btn60" class="active">1:00</button>
+    <button id="btn80">1:20</button>
+  </div>
+
+  <button class="reset" id="resetBtn">RESET</button>
+
+</div>
+
+<script>
+let duration = 60;
+let remaining = duration;
+let running = false;
+let interval = null;
+
+const display = document.getElementById("time");
+const btn60 = document.getElementById("btn60");
+const btn80 = document.getElementById("btn80");
+const resetBtn = document.getElementById("resetBtn");
+
+let audioCtx = null;
+
+// inizializza audio SOLO al primo tap
+function initAudio() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+}
+
+function formatTime(sec) {
+  return 00:${String(sec).padStart(2, '0')};
+}
+
+function update() {
+  display.textContent = formatTime(remaining);
+}
+
+function playBeep() {
+  if (!audioCtx) return;
+
+  for (let i = 0; i < 2; i++) {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+
+    osc.frequency.value = 450;
+    gain.gain.value = 0.25;
+
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    const t = audioCtx.currentTime + i * 0.35;
+    osc.start(t);
+    osc.stop(t + 0.15);
+  }
+}
+
+function toggleTimer() {
+  initAudio();
+
+  if (!running) {
+    running = true;
+    interval = setInterval(() => {
+      if (remaining > 0) {
+        remaining--;
+        update();
+      } else {
+        clearInterval(interval);
+        running = false;
+        playBeep();
+      }
+    }, 1000);
+  } else {
+    running = false;
+    clearInterval(interval);
+  }
+}
+
+function setTimer(sec) {
+  running = false;
+  clearInterval(interval);
+  duration = sec;
+  remaining = sec;
+  update();
+
+  btn60.classList.remove("active");
+  btn80.classList.remove("active");
+  sec === 60 ? btn60.classList.add("active") : btn80.classList.add("active");
+}
+
+function resetTimer() {
+  running = false;
+  clearInterval(interval);
+  remaining = duration;
+  update();
+}
+
+display.onclick = toggleTimer;
+btn60.onclick = () => setTimer(60);
+btn80.onclick = () => setTimer(80);
+resetBtn.onclick = resetTimer;
+
+update();
+</script>
+</body>
+</html>
